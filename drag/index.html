@@ -13,7 +13,7 @@
         }
         #target {
             position:absolute; width:100px; height:100px; top:50px; left:50px;
-            background-color:red; color:black;
+            background-color:rgba(102, 28, 199, 0.856); color:rgb(255, 255, 255);
         }
     </style>
 
@@ -28,14 +28,17 @@
         var _isMoving = false; //移動中かどうかのフラグ true:移動中 false:停止中
         var _clickX,  _clickY; //クリックされた位置
         var _position;         //クリックされた時の要素の位置
+        var _direction = false;    // 移動方向 "X", "Y" or false
 
         //mousedownイベント
         $("#target").on("mousedown", function(e) {
+            console.log("mousedown");
             if (_isMoving) return; //移動中の場合は処理しない
 
             _isMoving = true; //移動中にする
+            _direction = false; // 移動方向なしにする
 
-            //クリックされた座標を保持します
+            //クリックされた座標を保持します（クリックされた時のマウスの座標）
             _clickX = e.screenX;
             _clickY = e.screenY;
 
@@ -43,17 +46,30 @@
             _position = $("#target").position();
         });
 
+
+
         //mousemoveイベント
         $("#root").on("mousemove", function(e) {
             if (_isMoving == false) return; //移動中でない場合は処理しない
 
+            if (!_direction) {
+                _direction = Math.abs(e.screenX - _clickX) >= Math.abs(e.screenY - _clickY) ? "X" : "Y";
+            }
+
             //クリックされた時の要素の座標に、移動量を加算したものを、座標として設定します
-            $("#target").css("left", (_position.left + e.screenX - _clickX) + "px");
-            $("#target").css("top" , (_position.top  + e.screenY - _clickY) + "px");
+            if (_direction == "X") {
+                $("#target").css("left", (_position.left + e.screenX - _clickX) + "px");
+            }
+            else {
+                $("#target").css("top" , (_position.top  + e.screenY - _clickY) + "px");
+            }
         });
 
+
+
         //mouseupイベント
-        $("#target").on("mouseup", function(e) {
+        $(document).on("mouseup", function(e) {
+            console.log("mouseup")
             if (_isMoving == false) return; //移動中でない場合は処理しない
 
             _isMoving = false; //停止中にする
