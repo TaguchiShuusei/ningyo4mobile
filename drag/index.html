@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>drag</title>
+    <style>body{color:#fff; background-color:#000;}</style>
+</head>
+<body>
+    <style>
+        html, body { height:100%; }
+        #root {
+            position:relative; width:100%; height:100%; overflow:hidden;
+        }
+        #target {
+            position:absolute; width:100px; height:100px; top:50px; left:50px;
+            background-color:red; color:black;
+        }
+    </style>
+
+    <div id="root">
+        <div id="target">
+            ドラッグして動かせます。
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script>
+        var _isMoving = false; //移動中かどうかのフラグ true:移動中 false:停止中
+        var _clickX,  _clickY; //クリックされた位置
+        var _position;         //クリックされた時の要素の位置
+
+        //mousedownイベント
+        $("#target").on("mousedown", function(e) {
+            if (_isMoving) return; //移動中の場合は処理しない
+
+            _isMoving = true; //移動中にする
+
+            //クリックされた座標を保持します
+            _clickX = e.screenX;
+            _clickY = e.screenY;
+
+            //クリックされた時の要素の座標を保持します
+            _position = $("#target").position();
+        });
+
+        //mousemoveイベント
+        $("#root").on("mousemove", function(e) {
+            if (_isMoving == false) return; //移動中でない場合は処理しない
+
+            //クリックされた時の要素の座標に、移動量を加算したものを、座標として設定します
+            $("#target").css("left", (_position.left + e.screenX - _clickX) + "px");
+            $("#target").css("top" , (_position.top  + e.screenY - _clickY) + "px");
+        });
+
+        //mouseupイベント
+        $("#target").on("mouseup", function(e) {
+            if (_isMoving == false) return; //移動中でない場合は処理しない
+
+            _isMoving = false; //停止中にする
+        });
+    </script>        
+</body>
+</html>
