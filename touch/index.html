@@ -31,54 +31,58 @@
     </section>
 
     <script>
-        let startXY = {x: null, y: null};
-        let endXY = {x: null, y: null};
-        let parentXY = document.getElementById("parent").getBoundingClientRect();
-        let elm = document.getElementById("target");
-        let elmXY;
-        let isSwiping = false;
+        let _touchStartXY = {x: null, y: null};
+        let _touchEndXY = {x: null, y: null};
+        let _parentElmXY = document.getElementById("parent").getBoundingClientRect();
+        let _targetElm = document.getElementById("target");
+        let _targetElmXY;
+        let _isSwiping = false;
+        let _direction = undefined;  // "Horizontal" or "Vertical"
 
         window.addEventListener('load', function() {
             // スワイプ／フリック
-            elm.addEventListener('touchmove', logSwipe);
+            _targetElm.addEventListener('touchmove', logSwipe);
             // タッチ開始
-            elm.addEventListener('touchstart', logSwipeStart);
+            _targetElm.addEventListener('touchstart', logSwipeStart);
             // タッチ終了
-            elm.addEventListener('touchend', logSwipeEnd);
+            _targetElm.addEventListener('touchend', logSwipeEnd);
         });
 
         function logSwipeStart(event) {
-            isSwiping = true;
             event.preventDefault();
+            _isSwiping = true;
             // マウスのページ内座標
-            startXY.x = event.touches[0].pageX;
-            startXY.y = event.touches[0].pageY;
-            elmXY = elm.getBoundingClientRect();
-            console.log([startXY.x, startXY.y, elmXY.left, elmXY.top]);
+            [_touchStartXY.x, _touchStartXY.y] = [event.touches[0].pageX, event.touches[0].pageY];
+            _targetElmXY = _targetElm.getBoundingClientRect();
         }
 
         function logSwipe(event) {
-            if (isSwiping) {
-                event.preventDefault();
-                // マウスのページ内座標
-                endXY.x = event.touches[0].pageX;
-                endXY.y = event.touches[0].pageY;
-                // 親要素からの相対座標を設定
-                elm.style.left = (event.touches[0].pageX - (startXY.x - elmXY.left) - parentXY.left) + "px";
-                elm.style.top = (event.touches[0].pageY - (startXY.y - elmXY.top) - parentXY.top) + "px";
-                //console.log([event.touches[0].pageX, event.touches[0].pageY])
+            event.preventDefault();
+            if (_isSwiping) {
+                if (! _direction) {
+                    if(Math.abs(event.touches[0].pageX - _touchStartXY.x) >= Math.abs(event.touches[0].pageY - _touchStartXY.y) ) {
+                        console.log("横方向");
+                        _direction = "Horizontal";
+                    }
+                    else {
+                        console.log("縦方向");
+                        _direction = "Vertical";
+                    }
+                }
+                
+                if (_direction == "Horizontal") {
+                    _targetElm.style.left = (event.touches[0].pageX - (_touchStartXY.x - _targetElmXY.left) - _parentElmXY.left) + "px";
+                }
+                else {
+                    _targetElm.style.top = (event.touches[0].pageY - (_touchStartXY.y - _targetElmXY.top) - _parentElmXY.top) + "px";
+                }
             }
         }
 
         function logSwipeEnd(event) {
             event.preventDefault();
-            if(Math.abs(endXY.x - startXY.x) >= Math.abs(endXY.y - startXY.y) ) {
-                console.log("横方向");
-            }
-            else {
-                console.log("縦方向");
-            }
-            isSwiping = false;
+            _isSwiping = false;
+            _direction = undefined;
         }
     </script>
 </body>
