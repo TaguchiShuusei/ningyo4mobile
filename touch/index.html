@@ -60,7 +60,7 @@
             event.preventDefault();
             if (_isSwiping) {
                 if (! _direction) {
-                    if(Math.abs(event.touches[0].pageX - _touchStartXY.x) >= Math.abs(event.touches[0].pageY - _touchStartXY.y) ) {
+                    if (Math.abs(event.touches[0].pageX - _touchStartXY.x) >= Math.abs(event.touches[0].pageY - _touchStartXY.y)) {
                         console.log("横方向");
                         _direction = "Horizontal";
                     }
@@ -69,12 +69,12 @@
                         _direction = "Vertical";
                     }
                 }
-                
+
                 if (_direction == "Horizontal") {
-                    _targetElm.style.left = (event.touches[0].pageX - (_touchStartXY.x - _targetElmXY.left) - _parentElmXY.left) + "px";
+                    _targetElm.style.left = (event.touches[0].pageX - (_touchStartXY.x - _targetElmXY.left) - _parentElmXY.left + window.pageXOffset) + "px";
                 }
                 else {
-                    _targetElm.style.top = (event.touches[0].pageY - (_touchStartXY.y - _targetElmXY.top) - _parentElmXY.top) + "px";
+                    _targetElm.style.top = (event.touches[0].pageY - (_touchStartXY.y - _targetElmXY.top) - _parentElmXY.top + window.pageYOffset) + "px";
                 }
             }
         }
