@@ -4,46 +4,82 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>GRAYCODE JavaScript</title>
-    <script>
-		var startX = null;
-        var endX = null;
-        window.addEventListener('load', function() {
-        // スワイプ／フリック
-        document.getElementById("content1").addEventListener('touchmove', logSwipe);
-        // タッチ開始
-        document.getElementById("content1").addEventListener('touchstart', logSwipeStart);
-        // タッチ終了
-        document.getElementById("content1").addEventListener('touchend', logSwipeEnd);
-        });
-
-        function logSwipeStart(event) {
-            event.preventDefault();
-            startX = event.touches[0].pageX;
-        }
-        function logSwipe(event) {
-            event.preventDefault();
-            endX = event.touches[0].pageX;
-        }
-        function logSwipeEnd(event) {
-            event.preventDefault();
-            if( 0 < (endX - startX) ) {
-                console.log("右向き");
-            }
-            else {
-                console.log("左向き");
-            }
-        }
-    </script>
     <style>
-        #content1 {
-            padding: 20px;
+        body {
+            margin: 0;
+        }
+        #parent {
+            position: relative;
             height: 300px;
             background-color: #3f98d1;
+        }
+        #target {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            left: 100px;
+            top: 100px;
+        /*    border-radius: 75px;*/
+            background-color: #b95e6a;
         }
     </style>
 </head>
 <body>
-    <h1>JavaScriptレシピ</h1>
-    <section id="content1"></section>
+    <h1>スマホでドラッグ</h1>
+    <section id="parent">
+        <div id="target"></div>
+    </section>
+
+    <script>
+        let startXY = {x: null, y: null};
+        let endXY = {x: null, y: null};
+        let parentXY = document.getElementById("parent").getBoundingClientRect();
+        let elm = document.getElementById("target");
+        let elmXY;
+        let isSwiping = false;
+
+        window.addEventListener('load', function() {
+            // スワイプ／フリック
+            elm.addEventListener('touchmove', logSwipe);
+            // タッチ開始
+            elm.addEventListener('touchstart', logSwipeStart);
+            // タッチ終了
+            elm.addEventListener('touchend', logSwipeEnd);
+        });
+
+        function logSwipeStart(event) {
+            isSwiping = true;
+            event.preventDefault();
+            // マウスのページ内座標
+            startXY.x = event.touches[0].pageX;
+            startXY.y = event.touches[0].pageY;
+            elmXY = elm.getBoundingClientRect();
+            console.log([startXY.x, startXY.y, elmXY.left, elmXY.top]);
+        }
+
+        function logSwipe(event) {
+            if (isSwiping) {
+                event.preventDefault();
+                // マウスのページ内座標
+                endXY.x = event.touches[0].pageX;
+                endXY.y = event.touches[0].pageY;
+                // 親要素からの相対座標を設定
+                elm.style.left = (event.touches[0].pageX - (startXY.x - elmXY.left) - parentXY.left) + "px";
+                elm.style.top = (event.touches[0].pageY - (startXY.y - elmXY.top) - parentXY.top) + "px";
+                //console.log([event.touches[0].pageX, event.touches[0].pageY])
+            }
+        }
+
+        function logSwipeEnd(event) {
+            event.preventDefault();
+            if(Math.abs(endXY.x - startXY.x) >= Math.abs(endXY.y - startXY.y) ) {
+                console.log("横方向");
+            }
+            else {
+                console.log("縦方向");
+            }
+            isSwiping = false;
+        }
+    </script>
 </body>
 </html>
