@@ -13,7 +13,7 @@
             height: 300px;
             background-color: #3f98d1;
         }
-        #target {
+        #stage {
             position: absolute;
             width: 150px;
             height: 150px;
@@ -22,67 +22,100 @@
         /*    border-radius: 75px;*/
             background-color: #cadf14e7;
         }
+        .imageContainer {
+            width: 70%;
+            height: 70%;
+        }
+        #ic0 {
+            background-color: #df149be7;
+        }
+        #ic1 {
+            background-color: #dfba14e7;
+        }
     </style>
 </head>
 <body>
     <h1>スマホでドラッグ</h1>
     <section id="parent">
-        <div id="target"></div>
+        <div id="stage">
+            <div id="ic0" class="imageContainer"></div>
+            <div id="ic1" class="imageContainer"></div>
+        </div>
     </section>
 
     <script>
+        const THRESHOLD = 3;
         let _touchStartXY = {x: null, y: null};
         let _touchEndXY = {x: null, y: null};
         let _parentElmXY = document.getElementById("parent").getBoundingClientRect();
-        let _targetElm = document.getElementById("target");
-        let _targetElmXY;
+        let _stageElm = document.getElementById("stage");
+        let _stageElmXY;
         let _isSwiping = false;
         let _direction = undefined;  // "Horizontal" or "Vertical"
+        let _currentImage = 0;  // 現在表示されているimage要素を示す (#ic0 / #ic1)
 
         window.addEventListener('load', function() {
             // スワイプ／フリック
-            _targetElm.addEventListener('touchmove', logSwipe);
+            _stageElm.addEventListener('touchmove', logSwipe);
             // タッチ開始
-            _targetElm.addEventListener('touchstart', logSwipeStart);
+            _stageElm.addEventListener('touchstart', logSwipeStart);
             // タッチ終了
-            _targetElm.addEventListener('touchend', logSwipeEnd);
+            _stageElm.addEventListener('touchend', logSwipeEnd);
         });
+
+
 
         function logSwipeStart(event) {
             event.preventDefault();
             _isSwiping = true;
             // マウスのページ内座標
             [_touchStartXY.x, _touchStartXY.y] = [event.touches[0].pageX, event.touches[0].pageY];
-            _targetElmXY = _targetElm.getBoundingClientRect();
+            _stageElmXY = _stageElm.getBoundingClientRect();
         }
 
+
+
         function logSwipe(event) {
-            event.preventDefault();
             if (_isSwiping) {
+                event.preventDefault();
                 if (! _direction) {
-                    if (Math.abs(event.touches[0].pageX - _touchStartXY.x) >= Math.abs(event.touches[0].pageY - _touchStartXY.y)) {
-                        console.log("横方向");
+                    let deltaX = Math.abs(event.touches[0].pageX - _touchStartXY.x);
+                    let deltaY = Math.abs(event.touches[0].pageY - _touchStartXY.y);
+                    // 閾値を超えていなければスワイプ開始しない
+                    if (Math.max(deltaX, deltaY) < THRESHOLD)
+                        return;
+
+                    if (deltaX >= deltaY) {
                         _direction = "Horizontal";
                     }
                     else {
-                        console.log("縦方向");
                         _direction = "Vertical";
                     }
                 }
 
+                moveNextImage();
+
                 if (_direction == "Horizontal") {
-                    _targetElm.style.left = (event.touches[0].pageX - (_touchStartXY.x - _targetElmXY.left) - _parentElmXY.left + window.pageXOffset) + "px";
+                    _stageElm.style.left = (event.touches[0].pageX - (_touchStartXY.x - _stageElmXY.left) - _parentElmXY.left + window.pageXOffset) + "px";
                 }
                 else {
-                    _targetElm.style.top = (event.touches[0].pageY - (_touchStartXY.y - _targetElmXY.top) - _parentElmXY.top + window.pageYOffset) + "px";
+                    _stageElm.style.top = (event.touches[0].pageY - (_touchStartXY.y - _stageElmXY.top) - _parentElmXY.top + window.pageYOffset) + "px";
                 }
             }
         }
+
+
 
         function logSwipeEnd(event) {
             event.preventDefault();
             _isSwiping = false;
             _direction = undefined;
+        }
+
+
+        // スワイプ方向に応じて次に表示されるイメージを移動する。
+        function moveNextImage() {
+
         }
     </script>
 </body>
