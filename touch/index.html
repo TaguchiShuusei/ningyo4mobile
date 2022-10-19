@@ -10,27 +10,32 @@
         }
         #parent {
             position: relative;
-            height: 300px;
+            height: 500px;
             background-color: #3f98d1;
         }
         #stage {
             position: absolute;
-            width: 150px;
-            height: 150px;
+            width: 100px;
+            height: 100px;
             left: 100px;
             top: 100px;
         /*    border-radius: 75px;*/
             background-color: #cadf14e7;
         }
         .imageContainer {
-            width: 70%;
-            height: 70%;
+            position: absolute;
+            width: 100px;
+            height: 100px;
         }
         #ic0 {
             background-color: #df149be7;
+            left: 0;
+            top: 0;
         }
         #ic1 {
             background-color: #dfba14e7;
+            left: 0;
+            top: 100px;
         }
     </style>
 </head>
@@ -51,8 +56,9 @@
         let _stageElm = document.getElementById("stage");
         let _stageElmXY;
         let _isSwiping = false;
-        let _direction = undefined;  // "Horizontal" or "Vertical"
+        let _swipeDirection = undefined;  // 0:上、1:右、2:下、3:左
         let _currentImage = 0;  // 現在表示されているimage要素を示す (#ic0 / #ic1)
+        let _imageElms = [document.getElementById("ic0"), document.getElementById("ic1")];
 
         window.addEventListener('load', function() {
             // スワイプ／フリック
@@ -78,24 +84,23 @@
         function logSwipe(event) {
             if (_isSwiping) {
                 event.preventDefault();
-                if (! _direction) {
-                    let deltaX = Math.abs(event.touches[0].pageX - _touchStartXY.x);
-                    let deltaY = Math.abs(event.touches[0].pageY - _touchStartXY.y);
+                if (_swipeDirection === undefined) {
+                    let deltaX = event.touches[0].pageX - _touchStartXY.x;
+                    let deltaY = event.touches[0].pageY - _touchStartXY.y;
                     // 閾値を超えていなければスワイプ開始しない
-                    if (Math.max(deltaX, deltaY) < THRESHOLD)
+                    if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < THRESHOLD)
                         return;
 
-                    if (deltaX >= deltaY) {
-                        _direction = "Horizontal";
+                    if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+                        _swipeDirection = deltaX >= 0 ? 1 : 3;
                     }
                     else {
-                        _direction = "Vertical";
+                        _swipeDirection = deltaY >= 0 ? 2 : 0;
                     }
+                    moveNextImage(_swipeDirection);
                 }
 
-                moveNextImage();
-
-                if (_direction == "Horizontal") {
+                if (_swipeDirection == 1 || _swipeDirection == 3) {
                     _stageElm.style.left = (event.touches[0].pageX - (_touchStartXY.x - _stageElmXY.left) - _parentElmXY.left + window.pageXOffset) + "px";
                 }
                 else {
@@ -109,13 +114,36 @@
         function logSwipeEnd(event) {
             event.preventDefault();
             _isSwiping = false;
-            _direction = undefined;
+            _swipeDirection = undefined;
         }
 
 
         // スワイプ方向に応じて次に表示されるイメージを移動する。
-        function moveNextImage() {
+        function moveNextImage(direction) {
+            let currentImageElm = _imageElms[_currentImage];
+            let nextImageElm = _imageElms[Math.abs(_currentImage - 1)];
 
+            let currentImageElmXY = currentImageElm.getBoundingClientRect();
+            let nextImageElmXY = nextImageElm.getBoundingClientRect();
+
+            switch (direction) {
+                case 0:
+                    nextImageElm.style.top =  (currentImageElmXY.top + 100 - _stageElmXY.top) + "px";
+                    nextImageElm.style.left = (currentImageElmXY.left - _stageElmXY.left) + "px";
+                    break;
+                case 1:
+                    nextImageElm.style.top =  (currentImageElmXY.top - _stageElmXY.top) + "px";
+                    nextImageElm.style.left = (currentImageElmXY.left - 100 - _stageElmXY.left) + "px";
+                    break;
+                case 2:
+                    nextImageElm.style.top =  (currentImageElmXY.top - 100 - _stageElmXY.top) + "px";
+                    nextImageElm.style.left = (currentImageElmXY.left - _stageElmXY.left) + "px";
+                    break;
+                case 3:
+                    nextImageElm.style.top =  (currentImageElmXY.top - _stageElmXY.top) + "px";
+                    nextImageElm.style.left = (currentImageElmXY.left + 100 - _stageElmXY.left) + "px";
+                    break;
+            }
         }
     </script>
 </body>
