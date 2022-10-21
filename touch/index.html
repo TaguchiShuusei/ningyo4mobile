@@ -10,15 +10,18 @@
         }
         #parent {
             position: relative;
-            height: 500px;
+            margin: auto;
+            height: 100px;
+            width: 100px;
+            overflow: hidden;
             background-color: #3f98d1;
         }
         #stage {
             position: absolute;
             width: 100px;
             height: 100px;
-            left: 100px;
-            top: 100px;
+            left: 0;
+            top: 0;
         /*    border-radius: 75px;*/
             background-color: #cadf14e7;
         }
@@ -50,15 +53,16 @@
 
     <script>
         const THRESHOLD = 3;
-        let _touchStartXY = {x: null, y: null};
-        let _touchEndXY = {x: null, y: null};
-        let _parentElmXY = document.getElementById("parent").getBoundingClientRect();
+        let _parentElm = document.getElementById("parent");
         let _stageElm = document.getElementById("stage");
+        let _imageElms = [document.getElementById("ic0"), document.getElementById("ic1")];
+        let _parentElmXY = _parentElm.getBoundingClientRect();
         let _stageElmXY;
         let _isSwiping = false;
         let _swipeDirection = undefined;  // 0:上、1:右、2:下、3:左
         let _currentImage = 0;  // 現在表示されているimage要素を示す (#ic0 / #ic1)
-        let _imageElms = [document.getElementById("ic0"), document.getElementById("ic1")];
+        let _touchStartXY = {x: null, y: null};
+        let _touchEndXY = {x: null, y: null};
 
         window.addEventListener('load', function() {
             // スワイプ／フリック
@@ -73,10 +77,11 @@
 
         function logSwipeStart(event) {
             event.preventDefault();
+
             _isSwiping = true;
             // マウスのページ内座標
-            [_touchStartXY.x, _touchStartXY.y] = [event.touches[0].pageX, event.touches[0].pageY];
-            _stageElmXY = _stageElm.getBoundingClientRect();
+            _touchStartXY = {x: event.touches[0].pageX, y: event.touches[0].pageY};
+            _stageElmXY = getRelPos(_stageElm, _parentElm);
         }
 
 
@@ -87,7 +92,7 @@
                 if (_swipeDirection === undefined) {
                     let deltaX = event.touches[0].pageX - _touchStartXY.x;
                     let deltaY = event.touches[0].pageY - _touchStartXY.y;
-                    // 閾値を超えていなければスワイプ開始しない
+                    // 閾値を超えていなければスワイプ開始しない。
                     if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < THRESHOLD)
                         return;
 
@@ -100,11 +105,12 @@
                     moveNextImage(_swipeDirection);
                 }
 
+                // スワイプで移動する要素は_stageElm。
                 if (_swipeDirection == 1 || _swipeDirection == 3) {
-                    _stageElm.style.left = (event.touches[0].pageX - (_touchStartXY.x - _stageElmXY.left) - _parentElmXY.left + window.pageXOffset) + "px";
+                    _stageElm.style.left = event.touches[0].pageX - (_touchStartXY.x - _stageElmXY.x) + "px";
                 }
                 else {
-                    _stageElm.style.top = (event.touches[0].pageY - (_touchStartXY.y - _stageElmXY.top) - _parentElmXY.top + window.pageYOffset) + "px";
+                    _stageElm.style.top = event.touches[0].pageY - (_touchStartXY.y - _stageElmXY.y) + "px";
                 }
             }
         }
@@ -114,36 +120,97 @@
         function logSwipeEnd(event) {
             event.preventDefault();
             _isSwiping = false;
-            _swipeDirection = undefined;
+//            _swipeDirection = undefined;
+            moveStage(_swipeDirection);
         }
 
 
-        // スワイプ方向に応じて次に表示されるイメージを移動する。
+
+        // スワイプ方向に応じて、次に表示されるイメージを移動する。
         function moveNextImage(direction) {
             let currentImageElm = _imageElms[_currentImage];
             let nextImageElm = _imageElms[Math.abs(_currentImage - 1)];
 
-            let currentImageElmXY = currentImageElm.getBoundingClientRect();
-            let nextImageElmXY = nextImageElm.getBoundingClientRect();
+            currentImageElmXY = getRelPos(currentImageElm, _stageElm);
 
             switch (direction) {
                 case 0:
-                    nextImageElm.style.top =  (currentImageElmXY.top + 100 - _stageElmXY.top) + "px";
-                    nextImageElm.style.left = (currentImageElmXY.left - _stageElmXY.left) + "px";
+                    nextImageElm.style.top =  (currentImageElmXY.y + 100) + "px";
+                    nextImageElm.style.left = (currentImageElmXY.x) + "px";
                     break;
                 case 1:
-                    nextImageElm.style.top =  (currentImageElmXY.top - _stageElmXY.top) + "px";
-                    nextImageElm.style.left = (currentImageElmXY.left - 100 - _stageElmXY.left) + "px";
+                    nextImageElm.style.top =  (currentImageElmXY.y) + "px";
+                    nextImageElm.style.left = (currentImageElmXY.x - 100) + "px";
                     break;
                 case 2:
-                    nextImageElm.style.top =  (currentImageElmXY.top - 100 - _stageElmXY.top) + "px";
-                    nextImageElm.style.left = (currentImageElmXY.left - _stageElmXY.left) + "px";
+                    nextImageElm.style.top =  (currentImageElmXY.y - 100) + "px";
+                    nextImageElm.style.left = (currentImageElmXY.x) + "px";
                     break;
                 case 3:
-                    nextImageElm.style.top =  (currentImageElmXY.top - _stageElmXY.top) + "px";
-                    nextImageElm.style.left = (currentImageElmXY.left + 100 - _stageElmXY.left) + "px";
+                    nextImageElm.style.top =  (currentImageElmXY.y) + "px";
+                    nextImageElm.style.left = (currentImageElmXY.x + 100) + "px";
                     break;
             }
+        }
+
+
+
+        /**
+         * touchend（指が離れて）から、次の画像が定位置に来るようにstageを自動的に移動する。
+        */
+        function moveStage(direction) {
+            // スワイプ前のstage座標(_stageElmXY)と、directionからstageの終点座標を求める。
+            var newStageXY;
+
+            switch (direction) {
+                case 0:
+                    newStageXY = {x: _stageElmXY.x, y: _stageElmXY.y -100};
+                    break;
+                case 1:
+                    newStageXY = {x: _stageElmXY.x +100, y: _stageElmXY.y};
+                    break;
+                case 2:
+                    newStageXY = {x: _stageElmXY.x, y: _stageElmXY.y +100};
+                    break;
+                case 3:
+                    newStageXY = {x: _stageElmXY.x -100, y: _stageElmXY.y};
+                    break;
+            }
+
+            let tId = setInterval(
+                /**
+                 * stageの終点座標との距離を得る。今回の移動距離を算出。移動。
+                 * もし終点座標との距離が閾値よりも小さければ、stageを終点座標まで移動し、timerクリア。
+                 * @@@ 自動的に移動している最中にスワイプされた時の対応。
+                */
+                function() {
+                    let nowStageElmXY = getRelPos(_stageElm, _parentElm);
+
+                    if (Math.abs(nowStageElmXY.x - newStageXY.x) < 10 && Math.abs(nowStageElmXY.y - newStageXY.y) < 10) {
+                        clearInterval(tId);
+                        _stageElm.style.left = newStageXY.x + "px";
+                        _stageElm.style.top  = newStageXY.y + "px";
+                        _currentImage = Math.abs(_currentImage - 1);
+                        _swipeDirection = undefined;
+                    }
+                    else {
+                        _stageElm.style.left = (newStageXY.x + nowStageElmXY.x) / 2 + "px";
+                        _stageElm.style.top  = (newStageXY.y + nowStageElmXY.y) / 2 + "px";
+                    }
+                },
+                30
+            );
+        }
+
+
+        /** 
+         * 指定した要素の座標を、指定したベース要素からの相対座標を返す
+        */
+        function getRelPos(targetElm, baseElm) {
+            let targetRect = targetElm.getBoundingClientRect();
+            let baseRect = baseElm.getBoundingClientRect();
+
+            return({x: targetRect.left - baseRect.left, y: targetRect.top - baseRect.top});
         }
     </script>
 </body>
