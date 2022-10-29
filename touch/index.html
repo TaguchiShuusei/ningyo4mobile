@@ -37,7 +37,7 @@
             left: 0;
             top: 0;
         /*    border-radius: 75px;*/
-            background-color: #cadf14e7;
+            background-color: #cadf14;
         }
         .imageContainer {
             position: absolute;
@@ -45,25 +45,38 @@
             height: 100%;
         }
         #ic0 {
-            background-color: #df149be7;
+            background-color: #df149b;
             left: 0;
             top: 0;
             z-index: 1;
         }
         #ic1 {
-            background-color: #dfba14e7;
+            background-color: #dfba14;
             left: 0;
             top: 0;
             z-index: 0;
         }
+        .imageContainer img {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: auto;
+            height: auto;
+            max-width: 100vh;
+            max-height: 100vw;
+            /*margin: auto;*/
+            transform: translate(-50%, -50%) rotate(90deg);
+            /*scale: calc(4 / 3);*/
+        }
+
     </style>
 </head>
 <body>
     <h1>スマホでスワイプ</h1>
     <section id="parent">
         <div id="stage">
-            <div id="ic0" class="imageContainer"></div>
-            <div id="ic1" class="imageContainer"></div>
+            <div id="ic0" class="imageContainer"><img alt="写真" /></div>
+            <div id="ic1" class="imageContainer"><img alt="写真" /></div>
         </div>
     </section>
 
@@ -82,15 +95,24 @@
         let _status = {
             isTouching: false,  // touchstart しているか
             isSwiping: false,   // スワイプしているか
-            isAnimating: false, // 自動的に移動中か
+            isAnimating: false, // 移動アニメーション中か
             swipeDirection: undefined,
             nextImagePlace: undefined   // 0, 1, 2, 3
         };
 
+        // 写真関連変数
+        let _photo = {
+            BASEURL: "./img/",
+            BASEYEAR: 2019,
+            year: 2021,
+            chonai: 9
+            //infoFile: "photo.js"
+        }
+
         let _touchStartPos = {x: null, y: null};
         let _touchEndPos = {x: null, y: null};
+        let _touchPos = {x: null, y: null};   // タッチされた時点におけるタッチのstageからの相対座標
         let _currentImageIdx = 0;   // 現在表示されているimage要素を示す (#ic0 / #ic1)
-        let _stageBasePos = {x: null, y: null};  // stage要素のスワイプしていない場合座標
         let _startStagePos = {x: null, y: null}; // touchstart時のstage要素の座標
         let _baseStagePos = {x: null, y: null};  // 基準となるstageの座標（アニメーションの終了位置を求めるのに使用） 
         let _timerId = undefined;    // animationのsetInterval()が返すタイマーID
@@ -102,7 +124,8 @@
             _image = {width: bound.width, height: bound.height};
         }
 
-
+        // 写真の初期表示
+        _elm.images[_currentImageIdx].getElementsByTagName("img")[0].setAttribute("src", getPhotoURL(_photo.year, 8));
         
         // タッチ開始
         _elm.stage.addEventListener('touchstart', onSwipeStart);
@@ -115,9 +138,11 @@
 
 
         function onSwipeStart(event) {
-            event.preventDefault();
+            //event.preventDefault();
 
             _startStagePos = getRelPos(_elm.stage, _elm.parent);     // stage要素の親要素からの相対座標を保存
+            let bounding = _elm.stage.getBoundingClientRect();
+            _touchPos = {x: event.touches[0].clientX - bounding.left, y: event.touches[0].clientY - bounding.top}; // stage相対座標
 
             if (_status.isAnimating) {
                 clearInterval(_timerId);    // animationを止める
@@ -137,11 +162,10 @@
             if (! _status.isTouching)
                 return;
 
-            event.preventDefault();
+            // event.preventDefault();
 
             // スワイプ開始の判定
-            // 　スワイプの方向の判定は、指の移動距離が閾値を超えた時を持って行う。
-            // 　方向が決まったら、_status.isSwiping, _status.swipeDirection が設定される。
+            // 　touch直後は不安定なので、スワイプの方向の判定は指の移動距離が閾値を超えた時に行う。
             {
                 if (_status.isSwiping == false) {
                     let deltaX = event.touches[0].clientX - _touchStartPos.clientX;
@@ -162,13 +186,15 @@
 
 
             // stage要素をスワイプで移動
-            // 　これによりstage上の2つのimageBoxが移動する。
+            // 　stageを移動することで配下の2つのimageBoxを移動させる。
             {
                 if (_status.swipeDirection == 1 || _status.swipeDirection == 3) {
-                    _elm.stage.style.left = _startStagePos.x + (event.touches[0].clientX - _touchStartPos.clientX) + "px";
+                    //_elm.stage.style.left = _startStagePos.x + (event.touches[0].clientX - _touchStartPos.clientX) + "px";
+                    _elm.stage.style.left = event.touches[0].clientX - _touchPos.x - _elm.parentRect.left + "px";
                 }
                 else {
-                    _elm.stage.style.top  = _startStagePos.y + (event.touches[0].clientY - _touchStartPos.clientY) + "px";
+                    //_elm.stage.style.top  = _startStagePos.y + (event.touches[0].clientY - _touchStartPos.clientY) + "px";
+                    _elm.stage.style.top  = event.touches[0].clientY - _touchPos.y - _elm.parentRect.top + "px";
                 }
             }
 
@@ -176,11 +202,12 @@
             // imageBoxの移動によってスキマのできる側が変わった時、次の画像のimageBoxを再配置
             {
                 let imagePos = getRelPos(_elm.images[_currentImageIdx], _elm.parent);
+
                 if (_status.swipeDirection == 1 || _status.swipeDirection == 3) {
-                    if (imagePos.x >= 0) {
-                        if (_status.nextImagePlace != 3) {
-                            replaceNextImage(3);
-                            _status.swipeDirection = 1;
+                    if (imagePos.x >= 0) {  // 右側にスワイプされていて
+                        if (_status.nextImagePlace != 3) {  // 次のimageBoxが左側にないなら
+                            replaceNextImage(3);            // 左側に移動させる
+                            _status.swipeDirection = 1;     // スワイプの方向を右側にする
                         }
                     }
                     else {
@@ -210,7 +237,7 @@
 
 
         function onSwipeEnd(event) {
-            event.preventDefault();
+            // event.preventDefault();
             _status.isTouching = false;
             _status.isSwiping = false;
             animateStage(_status.swipeDirection);
@@ -220,8 +247,6 @@
 
         // stageをスワイプした事でできたスキマを埋めるようにもう一つのイメージBoxを移動
         function replaceNextImage(place) {
-            console.log("replaceNextImage(" + place + ")");
-            
             let currentImageElm = _elm.images[_currentImageIdx];
             let nextImageElm = _elm.images[Math.abs(_currentImageIdx - 1)];
 
@@ -307,8 +332,28 @@
 
 
 
+        /**
+         * 写真のURLを返す
+         * 年、丁内番号を受取りimgタグのsrcに設定するURLを返す。
+        */
+        function getPhotoURL(year, chonai) {
+            const BASEYEAR = 2019;
+            const BASEURL = "https://www.kakudate.com/omatsuri/ningyou/mobile/touch/img/";
+            const photoInfo = [
+                ["yamane.jpg","yokomachi2.jpg","sakura.jpg","kamishin.jpg","nanoka.jpg","nishikatsu2.jpg","chuo.jpg","honcho2.jpg","shimoiwase.jpg","sugazawa3.jpg","tobu.jpg","ekidori.jpg","ekimae.jpg","iwase.jpg","otsuka2.jpg","seibu.jpg","hokubu.jpg","kawara.jpg","shinmeisya.jpg"],	// 2019 R1
+                ["yamane2.jpg","yokomachi.jpg","sakuramicho.jpg","kamishinmachi.jpg","nanokamachi","","","honcho.jpg","shimoiwasemachi.jpg","","","ekidori.jpg","","","ootsuka.jpg","","hokubu.jpg","kawaramachi.jpg","IMG20210909103752.jpg"],	// 2021 R3
+                ["yamane.jpg","yokomachi.jpg","sakuramicho2.jpg","kamishinmachi.jpg","nanokamachi.jpg","nishikaturakucho.jpg","chuou.jpg","honcho2.jpg","shimoiwasemachi.jpg","sugazawa.jpg","tobu.jpg","ekidori.jpg","ekimae2.jpg","iwase.jpg","ootsuka2.jpg","seibu.jpg","hokubu.jpg","kawaramachi.jpg","okiyama_shinmeisya.jpg"]	// 2022 R4
+            ];
+
+            let url = BASEURL + year + "/" + photoInfo[year - BASEYEAR][chonai];
+
+            return(url);
+        }
+
+
+
         /** 
-         * 指定した要素の座標を、指定したベース要素からの相対座標を返す
+         * 指定した要素の座標を、指定したベース要素からの相対座標で返す。
         */
         function getRelPos(targetElm, baseElm) {
             let targetRect = targetElm.getBoundingClientRect();
